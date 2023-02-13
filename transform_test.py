@@ -27,7 +27,7 @@ if __name__ == "__main__":
     write_path_str = r'G:\test\shp_gcj02\shp_transform.shp'
     shp_trans.transform_shpfile(read_path_str, write_path_str, "wgs84", "gcj02")
 
-    # (2) Single File
+    # (2) File Path
     read_path_str = r'G:\test\shp_wgs84'
     write_path_str = r'G:\test\shp_gcj02'
     shp_trans.transform_shpfile_batch(read_path_str, write_path_str, "wgs84", "gcj02")
