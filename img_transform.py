@@ -97,7 +97,7 @@ def transform_imgfile(read_path_str, write_path_str, coord_original, coord_targe
     tfwFile = read_path_str.split('.')[0] + ".tfw"
 
     if tifFile[:-4] == tfwFile[:-4]:
-        proj, geotrans, data = hp.read_img(tifFile)
+        proj, geotrans, data, nodata_value = hp.read_img(tifFile)
         in_ds = gdal.Open(tifFile)
         in_band = in_ds.GetRasterBand(1)
         width = in_band.XSize
@@ -178,7 +178,7 @@ def transform_imgfile(read_path_str, write_path_str, coord_original, coord_targe
         # 仿射变换系数
         trans = (cr, ar, dr, fr, br, er)
 
-        hp.write_img(write_path_str, proj, trans, data)
+        hp.write_img(write_path_str, proj, trans, data, nodata_value)
 
     # Delete TFW file
     os.remove(tfwFile)
@@ -196,3 +196,20 @@ def transform_imgfile_batch(read_path_str, write_path_str, coord_original, coord
 
     # Delete TFW files
     hp.delete_tfw(read_path_str)
+
+
+# 图像压缩函数
+def compress_raster(origin_file, target_file, method="LZW"):
+    dataset = gdal.Open(origin_file)
+    driver = gdal.GetDriverByName('GTiff')
+    driver.CreateCopy(target_file, dataset, strict=1, options=["TILED=YES", "COMPRESS={0}".format(method), "BIGTIFF=YES"])
+    del dataset
+
+
+# 图像坐标系转换+图像压缩
+def trans_compress(trans_dir, trans_crs, filename, filepath):
+    filepath_trans = os.path.join(trans_dir, filename)
+    temp_file = os.path.join(trans_dir, 'temp.tif')
+    transform_imgfile(filepath, temp_file, "wgs84", trans_crs)
+    compress_raster(temp_file, filepath_trans)
+    os.remove(temp_file)

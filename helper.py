@@ -8,6 +8,7 @@ except ImportError:
     import osr
 import glob
 import os
+import numpy as np
 
 
 # 读入image
@@ -19,16 +20,22 @@ def read_img(filename):
     im_proj = dataset.GetProjection()
     im_data = dataset.ReadAsArray(0, 0, im_width, im_height)
 
-    im_band = dataset.GetRasterBand(2)
-    nodata = im_band.GetNoDataValue()
-    im_data[im_data == nodata] = 0
+    im_band = dataset.GetRasterBand(1)
+    nodata_value = im_band.GetNoDataValue()
+    # im_data[im_data == nodata_value] = np.nan
+    # im_data = np.where(im_data == nodata_value, np.nan, im_data)
+    
+    # 创建掩蔽数组
+    mask = (im_data == nodata_value)
+    masked_data = np.ma.masked_array(im_data, mask)
 
     del dataset
-    return im_proj, im_geotrans, im_data
+    # return im_proj, im_geotrans, im_data, nodata_value
+    return im_proj, im_geotrans, masked_data, nodata_value
 
 
 # 写入image
-def write_img(filename, im_proj, im_geotrans, im_data):
+def write_img(filename, im_proj, im_geotrans, im_data, im_nodata_value):
     if 'int8' in im_data.dtype.name:
         datatype = gdal.GDT_Byte
     elif 'int16' in im_data.dtype.name:
@@ -48,9 +55,13 @@ def write_img(filename, im_proj, im_geotrans, im_data):
     dataset.SetProjection(im_proj)
 
     if im_bands == 1:
+        # dataset.GetRasterBand(1).SetNoDataValue(np.nan)
+        # dataset.GetRasterBand(1).SetNoDataValue(-9999.0)
+        # dataset.GetRasterBand(1).SetNoDataValue(im_nodata_value)
         dataset.GetRasterBand(1).WriteArray(im_data)
     else:
         for i in range(im_bands):
+            # dataset.GetRasterBand(i + 1).SetNoDataValue(im_nodata_value)
             dataset.GetRasterBand(i + 1).WriteArray(im_data[i])
 
     del dataset
